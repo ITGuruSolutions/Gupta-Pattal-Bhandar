@@ -172,7 +172,7 @@
 
         /* ── BOOK CONTAINER ── */
         .book-container {
-            width: min(820px, 94vw);
+            width: min(820px, 85vw);
             height: min(560px, 58vw);
             position: relative;
         }
@@ -320,6 +320,10 @@
             box-shadow: 0 0 16px rgba(184,74,38,0.25);
         }
         .btn:active { transform: scale(0.93); }
+        .btn, .swipe-arrow, .tool-btn, .thumb {
+            touch-action: manipulation;
+            user-select: none;
+        }
 
         /* Page indicator */
         .page-indicator {
@@ -504,6 +508,45 @@
             .hint { display: none; }
             .scene { gap: 6px; }
         }
+        /* Tablets */
+        @media (max-width: 1024px) {
+            .book-container {
+                width: 92vw;
+            }
+        }
+        /* Small tablets / large phones */
+        @media (max-width: 768px) {
+            .thumbnails { display: none; }
+            .progress-track { width: 90px; }
+            .toolbar { right: 8px; }
+            .book-container {
+                width: 92vw;
+            }
+        }
+        /* Very small phones */
+        @media (max-width: 360px) {
+            .catalog-title {
+                font-size: 9px;
+                letter-spacing: 2px;
+            }
+            .btn {
+                width: 30px;
+                height: 30px;
+            }
+            .page-indicator {
+                font-size: 10px;
+                min-width: 50px;
+            }
+        }
+        /* Landscape phones */
+        @media (max-height: 450px) and (max-width: 900px) {
+            .book-container {
+                height: 70vh;
+                width: calc(70vh / 0.683);
+            }
+            .header { display: none; }
+            .controls { gap: 8px; }
+        }
     </style>
 </head>
 <body>
@@ -624,9 +667,15 @@
         function getBookDims() {
             const vw = window.innerWidth;
             const vh = window.innerHeight;
-            const maxW = Math.min(820, vw * (vw < 480 ? 0.98 : vw < 860 ? 0.94 : 0.9));
+            let widthMultiplier;
+            if (vw < 360) widthMultiplier = 0.98;
+            else if (vw < 480) widthMultiplier = 0.96;
+            else if (vw < 768) widthMultiplier = 0.92;
+            else if (vw < 1024) widthMultiplier = 0.9;
+            else widthMultiplier = 0.85;
+            const maxW = Math.min(820, vw * widthMultiplier);
             const ratio = 560 / 820;
-            const h = Math.min(maxW * ratio, vh * 0.65);
+            const h = Math.min(maxW * ratio, vh * (vh < 600 ? 0.7 : 0.65));
             return { w: Math.round(h / ratio), h: Math.round(h) };
         }
 
@@ -727,8 +776,18 @@
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                // PageFlip handles autoSize, but we keep zoom reset to avoid overflow
-                if (zoom !== 1) { zoom = 1; scene.style.transform = ''; }
+                // Reset zoom to avoid overflow on resize
+                if (zoom !== 1) { 
+                    zoom = 1; 
+                    scene.style.transform = ''; 
+                }
+                // Recalculate book dimensions
+                const newDims = getBookDims();
+                // Update PageFlip options
+                pageFlip.update({
+                    width: newDims.w / 2,
+                    height: newDims.h
+                });
             }, 200);
         });
     </script>
