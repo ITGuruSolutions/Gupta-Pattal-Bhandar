@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digital Catalog</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #FBF7F2;
+            --dark: #0E0B09;
+            --rust: #B84A26;
+            --gold: #C9963A;
+            --gold-light: #E8C97A;
+            --sand: #D9C9B0;
+            --glass: rgba(255,255,255,0.06);
+            --border: rgba(201,150,58,0.22);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Outfit', sans-serif;
+            background: var(--dark);
+            position: relative;
+        }
+
+        /* ── BG IMAGE ── */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            background: url('bg.png') center center / cover no-repeat;
+            z-index: 0;
+        }
+        /* Dark vignette over bg */
+        .bg-layer::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at center, rgba(14,11,9,0.35) 0%, rgba(14,11,9,0.82) 100%),
+                linear-gradient(180deg, rgba(14,11,9,0.5) 0%, transparent 30%, transparent 70%, rgba(14,11,9,0.6) 100%);
+        }
+
+        /* ── GRAIN ── */
+        .grain {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.032;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+        }
+
+        /* ── AMBIENT GLOWS ── */
+        .glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .glow-tl {
+            width: clamp(200px, 40vw, 500px);
+            height: clamp(200px, 40vw, 500px);
+            background: radial-gradient(circle, rgba(184,74,38,0.22) 0%, transparent 70%);
+            top: -80px; left: -80px;
+        }
+        .glow-br {
+            width: clamp(150px, 35vw, 400px);
+            height: clamp(150px, 35vw, 400px);
+            background: radial-gradient(circle, rgba(201,150,58,0.18) 0%, transparent 70%);
+            bottom: -60px; right: -60px;
+        }
+        .glow-center {
+            width: clamp(300px, 60vw, 700px);
+            height: clamp(200px, 40vw, 450px);
+            background: radial-gradient(ellipse, rgba(201,150,58,0.07) 0%, transparent 65%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* ── SCENE ── */
+        .scene {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: clamp(8px, 2vh, 20px) clamp(8px, 2vw, 20px);
+            gap: clamp(8px, 1.5vh, 16px);
+        }
+
+        /* ── HEADER ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            animation: fadeDown 0.7s ease both;
+        }
+        .header-line {
+            width: clamp(30px, 6vw, 70px);
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--gold));
+            opacity: 0.5;
+        }
+        .header-line.right {
+            background: linear-gradient(to left, transparent, var(--gold));
+        }
+        .catalog-title {
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--gold-light);
+            font-size: clamp(10px, 1.4vw, 15px);
+            font-weight: 600;
+            letter-spacing: clamp(3px, 0.6vw, 6px);
+            text-transform: uppercase;
+        }
+
+        /* ── BOOK PLATFORM ── */
+        .book-platform {
+            position: relative;
+            animation: fadeUp 0.8s 0.15s ease both;
+        }
+        /* Ground shadow */
+        .book-platform::after {
+            content: '';
+            position: absolute;
+            bottom: -18px; left: 10%;
+            width: 80%; height: 22px;
+            background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%);
+            filter: blur(6px);
+        }
+
+        /* Decorative corner frames around book */
+        .book-frame {
+            position: relative;
+            padding: 6px;
+            border-radius: 4px;
+        }
+        .book-frame::before, .book-frame::after {
+            content: '';
+            position: absolute;
+            width: 18px; height: 18px;
+            border-color: var(--gold);
+            border-style: solid;
+            opacity: 0.45;
+        }
+        .book-frame::before { top: 0; left: 0; border-width: 1.5px 0 0 1.5px; border-radius: 2px 0 0 0; }
+        .book-frame::after  { bottom: 0; right: 0; border-width: 0 1.5px 1.5px 0; border-radius: 0 0 2px 2px; }
+        .corner-tr, .corner-bl {
+            position: absolute;
+            width: 18px; height: 18px;
+            border-color: var(--gold);
+            border-style: solid;
+            opacity: 0.45;
+            z-index: 30;
+        }
+        .corner-tr { top: 0; right: 0; border-width: 1.5px 1.5px 0 0; border-radius: 0 2px 0 0; }
+        .corner-bl { bottom: 0; left: 0; border-width: 0 0 1.5px 1.5px; border-radius: 0 0 0 2px; }
+
+        /* ── BOOK CONTAINER ── */
+        .book-container {
+            width: min(820px, 94vw);
+            height: min(560px, 58vw);
+            position: relative;
+        }
+
+        /* Spine shine */
+        .spine {
+            position: absolute;
+            left: 50%; top: 0;
+            transform: translateX(-50%);
+            width: 10px; height: 100%;
+            background: linear-gradient(to right,
+                rgba(0,0,0,0.5) 0%,
+                rgba(255,255,255,0.05) 35%,
+                rgba(255,255,255,0.18) 50%,
+                rgba(255,255,255,0.05) 65%,
+                rgba(0,0,0,0.5) 100%
+            );
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        #book { width: 100%; height: 100%; }
+
+        /* ── PAGES ── */
+        .stf__item { overflow: hidden; }
+
+        .page {
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--cream);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle page texture */
+        .page::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.03'/%3E%3C/svg%3E");
+            z-index: 0; pointer-events: none;
+        }
+
+        /* Inner border */
+        .page-inner-border {
+            position: absolute;
+            inset: 10px;
+            border: 1px solid rgba(184,74,38,0.10);
+            z-index: 2;
+            pointer-events: none;
+        }
+        /* Corner accent */
+        .page-inner-border::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 16px; height: 16px;
+            border-top: 2px solid rgba(184,74,38,0.3);
+            border-left: 2px solid rgba(184,74,38,0.3);
+        }
+        .page-inner-border::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 16px; height: 16px;
+            border-bottom: 2px solid rgba(184,74,38,0.3);
+            border-right: 2px solid rgba(184,74,38,0.3);
+        }
+
+        .page img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Placeholder */
+        .page-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--rust);
+            opacity: 0.25;
+            z-index: 1;
+        }
+        .page-placeholder .pg-icon { font-size: 40px; }
+        .page-placeholder span {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* ── LOADING ── */
+        .loading-overlay {
+            position: absolute; inset: 0;
+            background: var(--cream);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 5;
+            transition: opacity 0.4s ease;
+        }
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        .loader-ring {
+            width: 28px; height: 28px;
+            border: 2px solid rgba(184,74,38,0.12);
+            border-top-color: var(--rust);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+
+        /* ── CONTROLS ── */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: clamp(10px, 2vw, 24px);
+            z-index: 10;
+            animation: fadeUp 0.8s 0.3s ease both;
+        }
+
+        .btn {
+            display: flex; align-items: center; justify-content: center;
+            width: clamp(34px, 5vw, 42px);
+            height: clamp(34px, 5vw, 42px);
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            color: var(--sand);
+            cursor: pointer;
+            transition: all 0.22s ease;
+            font-size: clamp(13px, 2vw, 16px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .btn:hover {
+            background: rgba(184,74,38,0.2);
+            border-color: var(--rust);
+            color: var(--gold-light);
+            transform: scale(1.1);
+            box-shadow: 0 0 16px rgba(184,74,38,0.25);
+        }
+        .btn:active { transform: scale(0.93); }
+
+        /* Page indicator */
+        .page-indicator {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(11px, 1.6vw, 14px);
+            color: var(--sand);
+            opacity: 0.55;
+            letter-spacing: 3px;
+            min-width: 64px;
+            text-align: center;
+            user-select: none;
+        }
+
+        /* ── THUMBNAILS ── */
+        .thumbnails {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .thumb {
+            width: clamp(28px, 4vw, 38px);
+            height: clamp(20px, 2.8vw, 28px);
+            border-radius: 3px;
+            overflow: hidden;
+            cursor: pointer;
+            opacity: 0.3;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            background: var(--cream);
+            flex-shrink: 0;
+        }
+        .thumb:hover { opacity: 0.65; transform: translateY(-1px); }
+        .thumb.active {
+            opacity: 1;
+            border-color: var(--gold);
+            box-shadow: 0 0 8px rgba(201,150,58,0.45), 0 2px 8px rgba(0,0,0,0.3);
+            transform: translateY(-1px);
+        }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* ── PROGRESS BAR ── */
+        .progress-track {
+            width: clamp(120px, 25vw, 220px);
+            height: 2px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--rust), var(--gold));
+            border-radius: 2px;
+            transition: width 0.4s ease;
+            width: 20%;
+        }
+
+        /* ── SIDE TOOLBAR ── */
+        .toolbar {
+            position: fixed;
+            right: clamp(8px, 2vw, 20px);
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 20;
+        }
+        .tool-btn {
+            width: clamp(28px, 3.5vw, 34px);
+            height: clamp(28px, 3.5vw, 34px);
+            background: rgba(14,11,9,0.7);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--sand);
+            cursor: pointer;
+            font-size: clamp(11px, 1.5vw, 14px);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            position: relative;
+        }
+        .tool-btn:hover {
+            background: rgba(184,74,38,0.3);
+            border-color: var(--rust);
+            color: var(--gold-light);
+            transform: scale(1.08);
+        }
+        .tool-btn[data-tip]:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            right: calc(100% + 8px);
+            top: 50%; transform: translateY(-50%);
+            background: rgba(14,11,9,0.9);
+            color: var(--sand);
+            font-size: 10px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            font-family: 'Outfit', sans-serif;
+        }
+        .toolbar-divider {
+            width: 100%; height: 1px;
+            background: var(--border);
+            margin: 2px 0;
+        }
+
+        /* ── HINT ── */
+        .hint {
+            font-size: clamp(8px, 1vw, 10px);
+            color: var(--sand);
+            opacity: 0.2;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: fadeUp 1s 0.5s ease both;
+        }
+
+        /* ── MOBILE SWIPE ARROWS ── */
+        .swipe-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 15;
+            width: clamp(28px, 5vw, 40px);
+            height: clamp(60px, 12vh, 90px);
+            background: rgba(14,11,9,0.5);
+            border: 1px solid var(--border);
+            color: var(--sand);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            font-size: clamp(14px, 2.5vw, 20px);
+            opacity: 0.45;
+            transition: opacity 0.2s, background 0.2s;
+            backdrop-filter: blur(6px);
+        }
+        .swipe-arrow:hover { opacity: 0.85; background: rgba(184,74,38,0.25); }
+        .swipe-arrow.left { left: 0; border-radius: 0 6px 6px 0; border-left: none; }
+        .swipe-arrow.right { right: 0; border-radius: 6px 0 0 6px; border-right: none; }
+
+        /* Hide side arrows on wider screens */
+        @media (min-width: 700px) { .swipe-arrow { display: none; } }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── RESPONSIVE BREAKPOINTS ── */
+        /* Tablet */
+        @media (max-width: 860px) {
+            .book-container {
+                width: 94vw;
+                height: calc(94vw * 0.683);
+            }
+        }
+        /* Small tablet / large phone landscape */
+        @media (max-width: 640px) {
+            .thumbnails { display: none; }
+            .progress-track { width: 100px; }
+        }
+        /* Phone portrait */
+        @media (max-width: 480px) {
+            .book-container {
+                width: 98vw;
+                height: calc(98vw * 0.683);
+            }
+            .toolbar { right: 4px; }
+            .progress-track { display: none; }
+            .hint { display: none; }
+        }
+        /* Very short screens */
+        @media (max-height: 550px) {
+            .header { display: none; }
+            .hint { display: none; }
+            .scene { gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background -->
+    <div class="bg-layer"></div>
+    <div class="grain"></div>
+    <div class="glow glow-tl"></div>
+    <div class="glow glow-br"></div>
+    <div class="glow glow-center"></div>
+
+    <!-- Mobile swipe arrows -->
+    <button class="swipe-arrow left" id="mPrev" aria-label="Previous">&#8249;</button>
+    <button class="swipe-arrow right" id="mNext" aria-label="Next">&#8250;</button>
+
+    <!-- Side toolbar -->
+    <div class="toolbar">
+        <button class="tool-btn" id="zoomIn" data-tip="Zoom In">+</button>
+        <button class="tool-btn" id="zoomOut" data-tip="Zoom Out">−</button>
+        <div class="toolbar-divider"></div>
+        <button class="tool-btn" id="fullscreenBtn" data-tip="Fullscreen" style="font-size:12px">⛶</button>
+        <div class="toolbar-divider"></div>
+        <button class="tool-btn" id="firstBtn" data-tip="First Page" style="font-size:10px">⏮</button>
+        <button class="tool-btn" id="lastBtn" data-tip="Last Page" style="font-size:10px">⏭</button>
+    </div>
+
+    <div class="scene" id="scene">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-line"></div>
+            <div class="catalog-title">Gupta Pattal Bhandar</div>
+            <div class="header-line right"></div>
+        </div>
+
+        <!-- Book -->
+        <div class="book-platform">
+            <div class="book-frame">
+                <div class="corner-tr"></div>
+                <div class="corner-bl"></div>
+                <div class="book-container">
+                    <div class="spine"></div>
+                    <div id="book">
+                        <div class="stf__item">
+                            <div class="page">
+                                <div class="loading-overlay"><div class="loader-ring"></div></div>
+                                <div class="page-inner-border"></div>
+                                <img src="cover.png" alt="Cover"
+                                    onload="this.previousElementSibling.previousElementSibling.classList.add('hidden')"
+                                    onerror="handleImgError(this,'Cover')">
+                            </div>
+                        </div>
+                        <div class="stf__item">
+                            <div class="page">
+                                <div class="loading-overlay"><div class="loader-ring"></div></div>
+                                <div class="page-inner-border"></div>
+                                <img src="page1.png" alt="Page 1"
+                                    onload="this.previousElementSibling.previousElementSibling.classList.add('hidden')"
+                                    onerror="handleImgError(this,'Page 1')">
+                            </div>
+                        </div>
+                        <div class="stf__item">
+                            <div class="page">
+                                <div class="loading-overlay"><div class="loader-ring"></div></div>
+                                <div class="page-inner-border"></div>
+                                <img src="page2.png" alt="Page 2"
+                                    onload="this.previousElementSibling.previousElementSibling.classList.add('hidden')"
+                                    onerror="handleImgError(this,'Page 2')">
+                            </div>
+                        </div>
+                        <div class="stf__item">
+                            <div class="page">
+                                <div class="loading-overlay"><div class="loader-ring"></div></div>
+                                <div class="page-inner-border"></div>
+                                <img src="page3.png" alt="Page 3"
+                                    onload="this.previousElementSibling.previousElementSibling.classList.add('hidden')"
+                                    onerror="handleImgError(this,'Page 3')">
+                            </div>
+                        </div>
+                        <div class="stf__item">
+                            <div class="page">
+                                <div class="loading-overlay"><div class="loader-ring"></div></div>
+                                <div class="page-inner-border"></div>
+                                <img src="end.png" alt="End"
+                                    onload="this.previousElementSibling.previousElementSibling.classList.add('hidden')"
+                                    onerror="handleImgError(this,'End')">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom controls -->
+        <div class="controls">
+            <button class="btn" id="prevBtn" aria-label="Previous">&#8592;</button>
+            <div class="thumbnails" id="thumbStrip"></div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="page-indicator" id="pageIndicator">1 / 5</div>
+            <button class="btn" id="nextBtn" aria-label="Next">&#8594;</button>
+        </div>
+
+        <div class="hint">Swipe · Click edges · Arrow keys to navigate</div>
+    </div>
+
+    <script src="https://unpkg.com/page-flip/dist/js/page-flip.browser.js"></script>
+    <script>
+        function handleImgError(img, label) {
+            // Hide loading + show placeholder
+            const overlays = img.parentNode.querySelectorAll('.loading-overlay');
+            overlays.forEach(o => o.classList.add('hidden'));
+            img.style.display = 'none';
+            const ph = document.createElement('div');
+            ph.className = 'page-placeholder';
+            ph.innerHTML = `<div class="pg-icon">📄</div><span>${label}</span>`;
+            img.parentNode.appendChild(ph);
+        }
+
+        // ── Responsive dimensions ──
+        function getBookDims() {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const maxW = Math.min(820, vw * (vw < 480 ? 0.98 : vw < 860 ? 0.94 : 0.9));
+            const ratio = 560 / 820;
+            const h = Math.min(maxW * ratio, vh * 0.65);
+            return { w: Math.round(h / ratio), h: Math.round(h) };
+        }
+
+        const dims = getBookDims();
+
+        const pageFlip = new St.PageFlip(document.getElementById('book'), {
+            width: dims.w / 2,
+            height: dims.h,
+            size: 'stretch',
+            minWidth: 120,
+            maxWidth: 820,
+            minHeight: 200,
+            maxHeight: 700,
+            showCover: true,
+            maxShadowOpacity: 0.55,
+            useMouseEvents: true,
+            mobileScrollSupport: true,
+            swipeDistance: 15,
+            clickEventForward: true,
+            usePortrait: true,
+            flippingTime: 800,
+            autoSize: true,
+            startZIndex: 0,
+        });
+
+        pageFlip.loadFromHTML(document.querySelectorAll('.stf__item'));
+
+        // ── Thumbnails ──
+        const pages = document.querySelectorAll('.stf__item');
+        const thumbStrip = document.getElementById('thumbStrip');
+        const indicator  = document.getElementById('pageIndicator');
+        const progressFill = document.getElementById('progressFill');
+        const totalPages = pages.length;
+
+        pages.forEach((page, i) => {
+            const thumb = document.createElement('div');
+            thumb.className = 'thumb' + (i === 0 ? ' active' : '');
+            const img = page.querySelector('img');
+            if (img) {
+                const ti = document.createElement('img');
+                ti.src = img.src; ti.alt = img.alt;
+                thumb.appendChild(ti);
+            }
+            thumb.addEventListener('click', () => pageFlip.flip(i));
+            thumbStrip.appendChild(thumb);
+        });
+
+        function updateUI(idx) {
+            const n = idx + 1;
+            indicator.textContent = `${n} / ${totalPages}`;
+            progressFill.style.width = `${(n / totalPages) * 100}%`;
+            document.querySelectorAll('.thumb').forEach((t, i) =>
+                t.classList.toggle('active', i === idx));
+        }
+
+        pageFlip.on('flip', e => updateUI(e.data));
+
+        // ── Nav buttons ──
+        document.getElementById('prevBtn').addEventListener('click', () => pageFlip.flipPrev());
+        document.getElementById('nextBtn').addEventListener('click', () => pageFlip.flipNext());
+        document.getElementById('mPrev').addEventListener('click',  () => pageFlip.flipPrev());
+        document.getElementById('mNext').addEventListener('click',  () => pageFlip.flipNext());
+        document.getElementById('firstBtn').addEventListener('click', () => pageFlip.flip(0));
+        document.getElementById('lastBtn').addEventListener('click',  () => pageFlip.flip(totalPages - 1));
+
+        // ── Keyboard ──
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); pageFlip.flipNext(); }
+            if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); pageFlip.flipPrev(); }
+            if (e.key === 'Home') pageFlip.flip(0);
+            if (e.key === 'End')  pageFlip.flip(totalPages - 1);
+        });
+
+        // ── Zoom ──
+        let zoom = 1;
+        const scene = document.getElementById('scene');
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            zoom = Math.min(zoom + 0.1, 1.6);
+            scene.style.transform = `scale(${zoom})`;
+        });
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            zoom = Math.max(zoom - 0.1, 0.55);
+            scene.style.transform = `scale(${zoom})`;
+        });
+
+        // ── Fullscreen ──
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+            else document.exitFullscreen();
+        });
+        document.addEventListener('fullscreenchange', () => {
+            document.getElementById('fullscreenBtn').textContent =
+                document.fullscreenElement ? '✕' : '⛶';
+        });
+
+        // ── Resize handler ──
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                // PageFlip handles autoSize, but we keep zoom reset to avoid overflow
+                if (zoom !== 1) { zoom = 1; scene.style.transform = ''; }
+            }, 200);
+        });
+    </script>
+</body>
+</html>
